@@ -103,6 +103,7 @@ MODULE HCOI_GC_Main_Mod
   INTEGER             :: id_NO2
   INTEGER             :: id_O3
   INTEGER             :: id_POPG
+  INTEGER             :: id_OH
 
   !------------------------------------
   ! %%% Arrays, Pointers, Targets %%%
@@ -242,6 +243,8 @@ CONTAINS
     id_NO2   = Ind_('NO2' )
     id_O3    = Ind_('O3'  )
     id_POPG  = Ind_('POPG')
+    ! for Lightning HOx
+    id_OH    = Ind_('OH'  )
 
     !=======================================================================
     ! Read HEMCO configuration file and save into buffer. This also
@@ -2602,6 +2605,12 @@ CONTAINS
        IF ( id_LIMO > 0 ) THEN
           nSpc = nSpc + 1
        ENDIF
+       !%%%%% FOR Lightning HOx SIMULATIONS %%%%%
+       !Add OH here. I will add HO2 in the KPP solver directly
+       !(jmao, 04/15/2021)
+       IF ( id_OH > 0 ) THEN
+          nSpc = nSpc + 1
+       ENDIF
 
        !%%%%% FOR THE TAGGED CO SIMULATION %%%%%
        ! Add 5 extra species (ISOP, ACET, MTPA, LIMO, MTPO) for tagged CO 
@@ -2674,6 +2683,27 @@ CONTAINS
              HcoState%Spc(N)%SpcName     = 'SESQ'
              HcoState%Spc(N)%MW_g        = 150.0_hp
              HcoState%Spc(N)%EmMW_g      = 150.0_hp
+             HcoState%Spc(N)%MolecRatio  = 1.0_hp
+             HcoState%Spc(N)%HenryK0     = 0.0_hp
+             HcoState%Spc(N)%HenryCR     = 0.0_hp
+             HcoState%Spc(N)%HenryPKa    = 0.0_hp
+
+             ! Write to logfile
+             IF ( am_I_Root ) CALL HCO_SPEC2LOG( am_I_Root, HcoState, N )
+          ENDIF
+          !------------------------------------------------------------------
+          ! %%%%% FOR Lightning HOx SIMULATIONS %%%%%
+          !
+          ! Add the non-advected species OH and HO2 in the last species slot
+          ! Need to double check the ModID.
+          !(jmao, 04/15/2021) 
+          !------------------------------------------------------------------
+          IF ( id_OH > 0 ) THEN
+             N                           = nSpec
+             HcoState%Spc(N)%ModID       = N
+             HcoState%Spc(N)%SpcName     = 'OH'
+             HcoState%Spc(N)%MW_g        = 17.0_hp
+             HcoState%Spc(N)%EmMW_g      = 17.0_hp
              HcoState%Spc(N)%MolecRatio  = 1.0_hp
              HcoState%Spc(N)%HenryK0     = 0.0_hp
              HcoState%Spc(N)%HenryCR     = 0.0_hp

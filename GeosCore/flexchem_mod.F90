@@ -149,6 +149,8 @@ CONTAINS
 #if   defined( TOMAS )
     USE TOMAS_MOD,            ONLY : H2SO4_RATE
 #endif
+    USE HCO_INTERFACE_MOD,    ONLY : HcoState, GetHcoID, GetHcoVal
+    USE HCO_ERROR_MOD  !(jmao, 04/15/2021)
 !
 ! !INPUT PARAMETERS:
 !
@@ -226,6 +228,9 @@ CONTAINS
     REAL(fp)               :: Start,     Finish,   rtim,      itim
     REAL(fp)               :: SO4_FRAC,  YLAT,     T,         TIN
     REAL(fp)               :: TOUT
+!    REAL(fp)               :: OHEMIS, OHTMPFLX
+!    LOGICAL                :: OHFOUND
+!    INTEGER, SAVE          :: ID_LHOX = -999
 
     ! Strings
     CHARACTER(LEN=63)      :: OrigUnit
@@ -416,7 +421,22 @@ CONTAINS
        SpcInfo => NULL()
 
     ENDDO
-      
+    !=======================================================================
+    ! Call Lightning HOx (jmao, 04/15/2021)
+    !=======================================================================
+!    IF (Input_Opt%LHOX) THEN
+         ! Get HEMCO ID of species OH
+         IF ( ID_LHOX == -999 ) THEN
+            ID_LHOX = GetHcoID( 'OH' )
+         ENDIF
+         IF ( ID_LHOX > 0 ) THEN
+            IF ( .NOT. ASSOCIATED(HcoState%Spc(ID_OH)%Emis%Val) ) THEN
+               ID_LHOX = -1
+            ENDIF
+         ENDIF
+!    ELSE
+!         ID_LHOX = -1
+!    ENDIF      
     !=======================================================================
     ! Call RDAER -- computes aerosol optical depths
     !=======================================================================
@@ -522,7 +542,31 @@ CONTAINS
        ENDDO
        !$OMP END PARALLEL DO
     ENDIF
-
+    !=======================================================================
+    ! Lightning HOx need to be added before chemical solver.
+    !=======================================================================
+!$OMP PARALLEL DO
+!$OMP+DEFAULT( SHARED )
+!$OMP+PRIVATE( I, J, L, TMPFLX, Emis, FOUND )
+      DO L = 1, State_Grid%NZ
+      DO J = 1, State_Grid%NY
+      DO I = 1, State_Grid%NX
+         IF (ID_LHOX > 0) THEN !(jmao, 04/15/2021)
+            CALL GetHcoVal( ID_LHOX, I, J, L, 1, OHFOUND, Emis=OHEMIS )
+            IF ( OHFOUND ) THEN
+               ! Units from HEMCO are kg(OH)/box/s. Convert to kgC/box here.
+               OHTMPFLX           = OHEmis * GET_TS_EMIS()
+               State_Chm%Species(I,J,L,id_OH) =  &
+                     State_Chm%Species(I,J,L,id_OH) +  OHTMPFLX 
+               ! need to convert mass from OH to HO2
+               State_Chm%Species(I,J,L,id_HO2) = &     
+                 State_Chm%Species(I,J,L,id_HO2) + OHTMPFLX * (33.0_hp/17.0_hp)
+            ENDIF
+         ENDIF
+      ENDDO
+      ENDDO
+      ENDDO
+!$OMP END PARALLEL DO
     !======================================================================
     ! Convert species to [molec/cm3] (ewl, 8/16/16)
     !======================================================================
@@ -897,6 +941,7 @@ CONTAINS
           ENDIF
 
        ENDDO
+
 
        IF ( Input_Opt%DO_SAVE_PL ) THEN
 

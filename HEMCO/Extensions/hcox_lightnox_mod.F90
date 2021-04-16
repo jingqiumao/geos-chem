@@ -163,6 +163,7 @@ MODULE HCOX_LightNOx_Mod
   REAL*8,  PARAMETER            :: EAST_WEST_DIV = -30d0
   REAL*8,  PARAMETER            :: WEST_NS_DIV   =  35d0
   REAL*8,  PARAMETER            :: EAST_NS_DIV   =  35d0
+  REAL*8,  PARAMETER            :: HOxNOxscal = 100d0
 !
 ! !PRIVATE TYPES:
 !
@@ -170,6 +171,7 @@ MODULE HCOX_LightNOx_Mod
   TYPE :: MyInst
    INTEGER                       :: Instance
    INTEGER                       :: IDTNO     ! NO tracer ID
+   INTEGER                       :: IDTOH     ! OH tracer ID
    INTEGER                       :: ExtNr     ! HEMCO Extension ID
    LOGICAL                       :: DoDiagn
    LOGICAL                       :: LCNVFRC   ! Use convective fractions? 
@@ -178,6 +180,7 @@ MODULE HCOX_LightNOx_Mod
    ! Arrays
    REAL(dp), POINTER             :: PROFILE(:,:)
    REAL(hp), POINTER             :: SLBASE(:,:,:)
+   REAL(hp), POINTER             :: LightnOH(:,:,:)
 
    ! Overall scale factor to be applied to lightning NOx emissions. Must
    ! be defined in the HEMCO configuration file as extension attribute 
@@ -294,6 +297,18 @@ CONTAINS
                          RC, ExtNr=Inst%ExtNr)
        IF ( RC /= HCO_SUCCESS ) THEN
           CALL HCO_ERROR( HcoState%Config%Err, 'HCO_EmisAdd error: SLBASE', RC )
+          RETURN 
+       ENDIF
+
+    ENDIF
+
+    IF ( Inst%IDTOH > 0 ) THEN
+
+       ! Add flux to emission array
+       CALL HCO_EmisAdd( am_I_Root, HcoState, Inst%LightnOH, Inst%IDTOH, & 
+                         RC, ExtNr=Inst%ExtNr)
+       IF ( RC /= HCO_SUCCESS ) THEN
+          CALL HCO_ERROR( HcoState%Config%Err, 'HCO_EmisAdd error: LightnOH', RC )
           RETURN 
        ENDIF
 
@@ -434,7 +449,9 @@ CONTAINS
     ENDIF
 
     ! Reset arrays 
-    Inst%SLBASE = 0.0_hp
+    Inst%SLBASE = 0.0_hp    
+    Inst%LightnOH = 0.0_hp
+
     IF (Inst%DoDiagn) THEN
        DIAGN    = 0.0_hp
        TOPDIAGN = 0.0_hp
@@ -690,6 +707,10 @@ CONTAINS
     IF ( Inst%SpcScalVal(1) /= 1.0_sp ) THEN
        Inst%SLBASE = Inst%SLBASE * Inst%SpcScalVal(1)
     ENDIF
+    ! Here I added lightning HOx
+    ! Note that SLBASE is in the unit of kg (NO)/box/s
+    ! We need to convert that to mass of kg (OH).
+    Inst%LightnOH = Inst%SLBASE * HOxNOxscal * 17.0_hp / 30.0_hp
 
     ! Eventually apply spatiotemporal scale factors
     CALL HCOX_SCALE ( am_I_Root, HcoState, Inst%SLBASE, &
@@ -1051,13 +1072,15 @@ CONTAINS
     ! Get species ID
     CALL HCO_GetExtHcoID( HcoState, ExtNr, HcoIDs, SpcNames, nSpc, RC )
     IF ( RC /= HCO_SUCCESS ) RETURN
-    IF ( nSpc /= 1 ) THEN
-       MSG = 'Lightning NOx module must have exactly one species!' 
+!(jmao, 04/15/2021)
+    IF ( nSpc == 0 ) THEN
+       MSG = 'NO Lightning species found!' 
        CALL HCO_ERROR(HcoState%Config%Err,MSG, RC )
        RETURN
     ENDIF
+! I think this is defined in HEMCO_Config.rc
     Inst%IDTNO = HcoIDs(1)
-
+    Inst%IDTOH = HcoIDs(2)
     ! Get species scale factor
     CALL GetExtSpcVal( HcoState%Config, ExtNr, nSpc, &
                        SpcNames, 'Scaling', 1.0_sp, Inst%SpcScalVal, RC )
@@ -1069,9 +1092,10 @@ CONTAINS
 
     ! Echo info about this extension
     IF ( am_I_Root ) THEN
-       MSG = 'Use lightning NOx emissions (extension module)'
+       MSG = 'Use lightning NOx/HOx emissions (extension module)'
        CALL HCO_MSG(HcoState%Config%Err,MSG, SEP1='-' )
        WRITE(MSG,*) ' - Use species ', TRIM(SpcNames(1)), '->', Inst%IDTNO 
+       WRITE(MSG,*) ' - Use species ', TRIM(SpcNames(2)), '->', Inst%IDTOH 
        CALL HCO_MSG(HcoState%Config%Err,MSG)
        WRITE(MSG,*) ' - Use GEOS-5 flash rates: ', Inst%LLFR 
        CALL HCO_MSG(HcoState%Config%Err,MSG)
@@ -1100,6 +1124,14 @@ CONTAINS
        RETURN
     ENDIF
     Inst%SLBASE = 0d0
+
+    ! Allocate LightnOH (holds OH emissins from lightning)
+    ALLOCATE( Inst%LightnOH(HcoState%NX,HcoState%NY,HcoState%NZ), STAT=AS )
+    IF( AS /= 0 ) THEN
+       CALL HCO_ERROR ( HcoState%Config%Err, 'LightnOH', RC )
+       RETURN
+    ENDIF
+    Inst%LightnOH = 0d0
 
     !=======================================================================
     ! Obtain lightning CDF's from Ott et al [JGR, 2010]. (ltm, 1/25/11)
@@ -1406,6 +1438,7 @@ CONTAINS
        ! Free pointer
        IF ( ASSOCIATED( Inst%PROFILE       ) ) DEALLOCATE ( Inst%PROFILE       )
        IF ( ASSOCIATED( Inst%SLBASE        ) ) DEALLOCATE ( Inst%SLBASE        )
+       IF ( ASSOCIATED( Inst%LightnOH        ) ) DEALLOCATE ( Inst%LightnOH     )
        IF ( ALLOCATED ( Inst%SpcScalVal    ) ) DEALLOCATE ( Inst%SpcScalVal    )
        IF ( ALLOCATED ( Inst%SpcScalFldNme ) ) DEALLOCATE ( Inst%SpcScalFldNme )
    
