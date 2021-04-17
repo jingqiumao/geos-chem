@@ -13,7 +13,8 @@
 MODULE FlexChem_Mod
 !
 ! !USES:
-!
+!It seems HCO_ERROR_MOD should be called before Precision_mod for compilation.
+  USE HCO_ERROR_MOD            ! For HEMCO error reporting
   USE Precision_Mod            ! For GEOS-Chem Precision (fp)
 
   IMPLICIT NONE
@@ -137,7 +138,7 @@ CONTAINS
     USE State_Grid_Mod,       ONLY : GrdState
     USE State_Met_Mod,        ONLY : MetState
     USE Strat_Chem_Mod,       ONLY : SChem_Tend
-    USE TIME_MOD,             ONLY : GET_TS_CHEM
+    USE TIME_MOD,             ONLY : GET_TS_CHEM, GET_TS_EMIS
     USE TIME_MOD,             ONLY : Get_Day
     USE TIME_MOD,             ONLY : Get_Month
     USE TIME_MOD,             ONLY : Get_Year
@@ -150,7 +151,7 @@ CONTAINS
     USE TOMAS_MOD,            ONLY : H2SO4_RATE
 #endif
     USE HCO_INTERFACE_MOD,    ONLY : HcoState, GetHcoID, GetHcoVal
-    USE HCO_ERROR_MOD  !(jmao, 04/15/2021)
+!    USE HCO_ERROR_MOD  !(jmao, 04/15/2021)
 !
 ! !INPUT PARAMETERS:
 !
@@ -228,9 +229,9 @@ CONTAINS
     REAL(fp)               :: Start,     Finish,   rtim,      itim
     REAL(fp)               :: SO4_FRAC,  YLAT,     T,         TIN
     REAL(fp)               :: TOUT
-!    REAL(fp)               :: OHEMIS, OHTMPFLX
-!    LOGICAL                :: OHFOUND
-!    INTEGER, SAVE          :: ID_LHOX = -999
+    REAL(fp)               :: OHEMIS, OHTMPFLX
+    LOGICAL                :: OHFOUND
+    INTEGER, SAVE          :: ID_LHOX = -999
 
     ! Strings
     CHARACTER(LEN=63)      :: OrigUnit
@@ -552,7 +553,7 @@ CONTAINS
       DO J = 1, State_Grid%NY
       DO I = 1, State_Grid%NX
          IF (ID_LHOX > 0) THEN !(jmao, 04/15/2021)
-            CALL GetHcoVal( ID_LHOX, I, J, L, 1, OHFOUND, Emis=OHEMIS )
+            CALL GetHcoVal( ID_LHOX, I, J, L, OHFOUND, Emis=OHEMIS )
             IF ( OHFOUND ) THEN
                ! Units from HEMCO are kg(OH)/box/s. Convert to kgC/box here.
                OHTMPFLX           = OHEmis * GET_TS_EMIS()
