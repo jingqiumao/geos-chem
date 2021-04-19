@@ -431,7 +431,7 @@ CONTAINS
             ID_LHOX = GetHcoID( 'OH' )
          ENDIF
          IF ( ID_LHOX > 0 ) THEN
-            IF ( .NOT. ASSOCIATED(HcoState%Spc(ID_OH)%Emis%Val) ) THEN
+            IF ( .NOT. ASSOCIATED(HcoState%Spc(ID_LHOX)%Emis%Val) ) THEN
                ID_LHOX = -1
             ENDIF
          ENDIF
@@ -546,28 +546,30 @@ CONTAINS
     !=======================================================================
     ! Lightning HOx need to be added before chemical solver.
     !=======================================================================
-!$OMP PARALLEL DO
-!$OMP+DEFAULT( SHARED )
-!$OMP+PRIVATE( I, J, L, TMPFLX, Emis, FOUND )
+       !$OMP PARALLEL DO        &
+       !$OMP DEFAULT( SHARED )  &
+       !$OMP PRIVATE( I, J, L, OHTMPFLX, OHEmis, OHFOUND )
       DO L = 1, State_Grid%NZ
       DO J = 1, State_Grid%NY
       DO I = 1, State_Grid%NX
          IF (ID_LHOX > 0) THEN !(jmao, 04/15/2021)
             CALL GetHcoVal( ID_LHOX, I, J, L, OHFOUND, Emis=OHEMIS )
             IF ( OHFOUND ) THEN
-               ! Units from HEMCO are kg(OH)/box/s. Convert to kgC/box here.
+               ! Units from HEMCO are kg(OH)/m2/s. Convert to kgC/box here.
                OHTMPFLX           = OHEmis * GET_TS_EMIS()
                State_Chm%Species(I,J,L,id_OH) =  &
-                     State_Chm%Species(I,J,L,id_OH) +  OHTMPFLX 
+                     State_Chm%Species(I,J,L,id_OH) + &  
+                         OHTMPFLX *State_Grid%Area_M2(I,J) 
                ! need to convert mass from OH to HO2
                State_Chm%Species(I,J,L,id_HO2) = &     
-                 State_Chm%Species(I,J,L,id_HO2) + OHTMPFLX * (33.0_hp/17.0_hp)
+                 State_Chm%Species(I,J,L,id_HO2) + &
+                 OHTMPFLX * (33.0_hp/17.0_hp) *State_Grid%Area_M2(I,J)
             ENDIF
          ENDIF
       ENDDO
       ENDDO
       ENDDO
-!$OMP END PARALLEL DO
+       !$OMP END PARALLEL DO
     !======================================================================
     ! Convert species to [molec/cm3] (ewl, 8/16/16)
     !======================================================================

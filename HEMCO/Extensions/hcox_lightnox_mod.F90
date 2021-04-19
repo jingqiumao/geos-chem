@@ -177,6 +177,7 @@ MODULE HCOX_LightNOx_Mod
    LOGICAL                       :: LCNVFRC   ! Use convective fractions? 
    LOGICAL                       :: LLFR      ! Use GEOS-5 flash rates 
 
+!   REAL(hp)                      :: HOXNOX_SCALING ! Scaling from LNOx to LHOx.
    ! Arrays
    REAL(dp), POINTER             :: PROFILE(:,:)
    REAL(hp), POINTER             :: SLBASE(:,:,:)
@@ -1094,8 +1095,8 @@ CONTAINS
     IF ( am_I_Root ) THEN
        MSG = 'Use lightning NOx/HOx emissions (extension module)'
        CALL HCO_MSG(HcoState%Config%Err,MSG, SEP1='-' )
-       WRITE(MSG,*) ' - Use species ', TRIM(SpcNames(1)), '->', Inst%IDTNO 
-       WRITE(MSG,*) ' - Use species ', TRIM(SpcNames(2)), '->', Inst%IDTOH 
+       WRITE(MSG,*) ' - Use species ', TRIM(SpcNames(1)), '->', Inst%IDTNO, & 
+            TRIM(SpcNames(2)), '->', Inst%IDTOH 
        CALL HCO_MSG(HcoState%Config%Err,MSG)
        WRITE(MSG,*) ' - Use GEOS-5 flash rates: ', Inst%LLFR 
        CALL HCO_MSG(HcoState%Config%Err,MSG)
