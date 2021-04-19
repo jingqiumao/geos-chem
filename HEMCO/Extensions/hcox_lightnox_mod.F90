@@ -163,7 +163,7 @@ MODULE HCOX_LightNOx_Mod
   REAL*8,  PARAMETER            :: EAST_WEST_DIV = -30d0
   REAL*8,  PARAMETER            :: WEST_NS_DIV   =  35d0
   REAL*8,  PARAMETER            :: EAST_NS_DIV   =  35d0
-  REAL*8,  PARAMETER            :: HOxNOxscal = 100d0
+  REAL*8,  PARAMETER            :: HOxNOxscal = 10d0
 !
 ! !PRIVATE TYPES:
 !
@@ -711,7 +711,7 @@ CONTAINS
     ! Here I added lightning HOx
     ! Note that SLBASE is in the unit of kg (NO)/box/s
     ! We need to convert that to mass of kg (OH).
-    Inst%LightnOH = Inst%SLBASE * HOxNOxscal * 17.0_hp / 30.0_hp
+    Inst%LightnOH = Inst%SLBASE * HOxNOxscal * 1.0_hp / 30.0_hp
 
     ! Eventually apply spatiotemporal scale factors
     CALL HCOX_SCALE ( am_I_Root, HcoState, Inst%SLBASE, &
