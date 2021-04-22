@@ -5087,6 +5087,8 @@ CONTAINS
           CASE( 'HO2' )
              FullName      = 'Hydroperoxyl radical'
              Formula       = 'HO2'
+             MW_g          = 33.01_fp
+             EmMW_g        = 33.0_fp
              BackgroundVV  = 4.0e-15_fp
              Is_Gas        = T
              Is_Drydep     = F
@@ -5103,6 +5105,8 @@ CONTAINS
           CASE( 'OH' )
              FullName      = 'Hydroxyl radical'
              Formula       = 'OH'
+             MW_g          = 17.01_fp
+             EmMW_g        = 17.0_fp
              BackgroundVV  = 4.0e-15_fp
              Is_Gas        = T
              Is_Drydep     = F

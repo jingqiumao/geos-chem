@@ -564,6 +564,8 @@ CONTAINS
                State_Chm%Species(I,J,L,id_HO2) = &     
                  State_Chm%Species(I,J,L,id_HO2) + &
                  OHTMPFLX * (33.0_hp/17.0_hp) *State_Grid%Area_M2(I,J)
+! just for now, as HO2 molecule weight is also 1. 
+!                 OHTMPFLX * (33.0_hp/17.0_hp) *State_Grid%Area_M2(I,J)
             ENDIF
          ENDIF
       ENDDO
