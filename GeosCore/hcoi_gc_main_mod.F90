@@ -2692,7 +2692,7 @@ CONTAINS
              IF ( am_I_Root ) CALL HCO_SPEC2LOG( am_I_Root, HcoState, N )
           ENDIF
           !------------------------------------------------------------------
-          ! %%%%% FOR Lightning HOx SIMULATIONS %%%%%
+          ! %%%%% FOR Lightning HOx and Ox SIMULATIONS %%%%%
           !
           ! Add the non-advected species OH and HO2 in the last species slot
           ! Need to double check the ModID.

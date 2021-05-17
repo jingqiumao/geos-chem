@@ -163,7 +163,7 @@ MODULE HCOX_LightNOx_Mod
   REAL*8,  PARAMETER            :: EAST_WEST_DIV = -30d0
   REAL*8,  PARAMETER            :: WEST_NS_DIV   =  35d0
   REAL*8,  PARAMETER            :: EAST_NS_DIV   =  35d0
-  REAL*8,  PARAMETER            :: HOxNOxscal = 100d0
+  REAL*8,  PARAMETER            :: HOxNOxscal = 10d0
 !
 ! !PRIVATE TYPES:
 !

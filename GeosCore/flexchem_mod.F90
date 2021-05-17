@@ -53,8 +53,8 @@ MODULE FlexChem_Mod
 !
   ! Species ID flags (and logicals to denote if species are present)
   INTEGER               :: id_OH, id_HO2, id_O3P, id_O1D, id_CH4
-#if defined( MODEL_GEOS )
   INTEGER               :: id_O3
+#if defined( MODEL_GEOS )
   INTEGER               :: id_A3O2, id_ATO2, id_B3O2, id_BRO2, id_DHPCARP
   INTEGER               :: id_DIBOO,id_ETO2, id_HC5OO, id_IEPOXOO
   INTEGER               :: id_INPN, id_ISNOOA, id_ISNOOB, id_ISNOHOO, id_LIMO2
@@ -423,10 +423,8 @@ CONTAINS
 
     ENDDO
     !=======================================================================
-    ! Call Lightning HOx (jmao, 04/15/2021)
+    ! Call Lightning HOx and Ox (jmao, 04/15/2021)
     !=======================================================================
-!    IF (Input_Opt%LHOX) THEN
-         ! Get HEMCO ID of species OH
          IF ( ID_LHOX == -999 ) THEN
             ID_LHOX = GetHcoID( 'OH' )
          ENDIF
@@ -435,9 +433,7 @@ CONTAINS
                ID_LHOX = -1
             ENDIF
          ENDIF
-!    ELSE
-!         ID_LHOX = -1
-!    ENDIF      
+
     !=======================================================================
     ! Call RDAER -- computes aerosol optical depths
     !=======================================================================
@@ -564,6 +560,10 @@ CONTAINS
                State_Chm%Species(I,J,L,id_HO2) = &     
                  State_Chm%Species(I,J,L,id_HO2) + &
                  OHTMPFLX * (33.0_hp/17.0_hp) *State_Grid%Area_M2(I,J)
+               ! need to convert mass from OH to O3
+               State_Chm%Species(I,J,L,id_O3) = &     
+                 State_Chm%Species(I,J,L,id_O3) + &
+                 OHTMPFLX * (48.0_hp/17.0_hp) *State_Grid%Area_M2(I,J)
 ! just for now, as HO2 molecule weight is also 1. 
 !                 OHTMPFLX * (33.0_hp/17.0_hp) *State_Grid%Area_M2(I,J)
             ENDIF
@@ -1828,10 +1828,10 @@ CONTAINS
     id_O3P                   = Ind_( 'O'            )
     id_O1D                   = Ind_( 'O1D'          )
     id_OH                    = Ind_( 'OH'           ) 
+    id_O3                    = Ind_( 'O3'           ) 
 
 #if defined( MODEL_GEOS )
     ! ckeller
-    id_O3                    = Ind_( 'O3'           ) 
     id_A3O2                  = Ind_( 'A3O2'         ) 
     id_ATO2                  = Ind_( 'ATO2'         ) 
     id_BRO2                  = Ind_( 'BRO2'         ) 
